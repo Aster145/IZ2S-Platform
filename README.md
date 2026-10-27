@@ -8,6 +8,17 @@ IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu 
 
 **Host OS:** Linux only. Windows and macOS are unsupported; ARM64 remains a declared target with incomplete hardware validation. [Support details](SUPPORT.md).
 
+## Modules for IZ2S Platform
+
+Extend IZlauncher with these separately installed modules:
+
+| Module | What it does | Get it |
+| --- | --- | --- |
+| **[BlitBun](https://github.com/byizmysh/BlitBun)** | Stream a PC application's video and audio to NS2, with live resolution changes, separate Dock/Handheld profiles and optional forwarding of controllers paired with the console. | [Download and install](https://github.com/byizmysh/BlitBun/releases/latest) |
+| **[VacooTube](https://github.com/byizmysh/VacooTube)** | A YouTube player for NS2 with touch and controller navigation. Browsing, search, playback and settings are controlled entirely from the console after setup; the application runs on the PC in the background. Includes its own bundled BlitBun streaming engine. | [Download and install](https://github.com/byizmysh/VacooTube/releases/latest) |
+
+Install IZ2S Platform first, then follow the chosen module's README. Both modules include their PC and console components and can be installed independently: neither requires the other. They are optional downloads and are not bundled with the platform installer.
+
 ## PC control panel
 
 Choose a connection engine, prepare your ARM input device and manage the modules available to your console.
@@ -42,7 +53,7 @@ Choose a connection engine, prepare your ARM input device and manage the modules
 - **ns2jb by IZMYSH**, the only preinstalled engine.
 - Adapters for pepsipu and kurumuz. Download their original source explicitly in the panel, or copy it into `engines/<id>/upstream/` and choose **Check manual folder**.
 
-Streaming, games, YouTube and test applications from the experimental project are **not bundled** in this release. Original-engine files are not downloaded by the installer.
+BlitBun and VacooTube are available as [separate module downloads](#modules-for-iz2s-platform). Games and experimental test applications are **not bundled** in this release. Original-engine files are not downloaded by the installer.
 
 ## Install and start
 

@@ -34,3 +34,7 @@ The first command rebuilds the bootstrap shaders, menu typography and all three 
 `server/ps_fonts.py` resolves fonts on Debian/Ubuntu and Arch. `server/activity.cjs` publishes completed job history to a bounded text mailbox; `app/shaders/ps-layout.glsl` shares layout and scroll limits with the input shader. Removal uses menu-owned ABI-1 scratch words and the existing package queue. No console filesystem uninstall is performed.
 
 Desktop Vulkan rendering and navigation checks passed before packaging. The new shell has not been physically tested on Switch/ARM64. [Host support](../../SUPPORT.md).
+
+## Module compatibility
+
+IZPSlauncher implements the IZlauncher module format on console ABI 1. Its descriptor declares `moduleShells: ["izlauncher"]`, so existing modules remain available under this visual shell. Platform and ABI checks are still required. This corrects the empty library in rc.4.

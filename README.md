@@ -1,6 +1,6 @@
 # IZ2S Platform
 
-**0.16.0-rc.4 · Linux x64 / ARM64**
+**0.16.0-rc.5 · Linux x64 / ARM64**
 
 IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu shown on Switch 2 through SmileBASIC. The PC application, ARM input agent, console bootstrap and modules are installed/started separately.
 
@@ -9,15 +9,11 @@ IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu 
 **Host OS:** Linux only. Windows and macOS are unsupported; ARM64 remains a declared target with incomplete hardware validation. [Support details](SUPPORT.md).
 
 
-## What’s new in 0.16.0-rc.4
+## What’s new in 0.16.0-rc.5
 
-- **IZPSlauncher** joins IZlauncher as a native console shell. Choose it in the panel before the next session; it is discovered through the ordinary shell descriptor.
-- Blue portrait-card menu, categories and search, a lime mouse in a hat, and a new IZ logo with the author signature.
-- A single **Recent activity** feed replaces the two welcome panels. It shows completed installations, updates and removals with versions and local timestamps. Empty activity collapses to one row and does not leave a scrollable blank area.
-- **Remove from console** is available on loaded app cards in the PC panel and through **Minus** in either console shell. The package stays on the PC for loading again. Operations run at a menu boundary, after an active app returns.
-- Build instructions, release notes and a reusable release template are included with the source. File Exchange remains the only bundled application; streaming and YouTube are separate projects.
-
-
+- Fix the empty module library in **IZPSlauncher**. The native process previously rejected every package requiring IZlauncher because it compared the module-format name with the new visual shell ID.
+- IZPSlauncher now explicitly declares the IZlauncher module format it implements. The panel, startup selection and native library evaluate the same selected-shell contract; host and console-ABI checks remain enforced.
+- Add regression checks that reproduce the native IZPSlauncher environment, publish a nonempty console picker and complete a browser-queued load through the package/catalog boundary using local mock storage.
 ## Modules for IZ2S Platform
 
 Extend IZlauncher with these separately installed modules:
@@ -134,7 +130,7 @@ The prepared installation archive already contains compiled console shaders. Use
 ```sh
 git clone https://github.com/byizmysh/IZ2S-Platform.git
 cd IZ2S-Platform
-git checkout v0.16.0-rc.4
+git checkout v0.16.0-rc.5
 node shells/izpslauncher/build.cjs
 node shells/izlauncher/server/build-app.cjs
 node distribution/verify.cjs

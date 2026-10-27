@@ -1,6 +1,6 @@
 # IZ2S Platform — FAQ and practical guide
 
-This guide is written for someone who wants to use and maintain the platform without already knowing its internals. It describes the current **0.16.0-rc.4** implementation. A feature being described here does not mean it was physically tested on every device.
+This guide is written for someone who wants to use and maintain the platform without already knowing its internals. It describes the current **0.16.0-rc.5** implementation. A feature being described here does not mean it was physically tested on every device.
 
 [Back to the main README](README.md)
 
@@ -543,3 +543,7 @@ This removes the session catalog entry. Its IZM package, PC component and saved 
 ### What happens when there is no activity?
 
 IZPSlauncher shows one compact No recent activity row. It uses actual completed package jobs, never file modification timestamps. The feed and scroll limits grow with the available events and shrink when there are fewer rows. Example events in documentation screenshots are demonstration data.
+
+### Why was the IZPSlauncher library empty in rc.4?
+
+rc.4 treated the visual shell ID as the only module compatibility key. Existing modules require the IZlauncher module format, so the IZPSlauncher process filtered them all out. rc.5 declares that format explicitly through `moduleShells` in its shell descriptor and uses it consistently for the panel, startup selection and native package library. Update the panel, fully restart the console after an ended session, choose IZPSlauncher and start a fresh session. Application modules do not need to be repacked just for the new shell name.

@@ -8,12 +8,33 @@ IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu 
 
 **Host OS:** Linux only. Windows and macOS are unsupported; ARM64 remains a declared target with incomplete hardware validation. [Support details](SUPPORT.md).
 
-## A quick look
+## PC control panel
 
-<a href="docs/images/connection.jpg"><img src="docs/images/connection.jpg" width="420" alt="Connection panel: engine selection and hardware setup"></a>
-<a href="docs/images/app-library.jpg"><img src="docs/images/app-library.jpg" width="420" alt="App library with the bundled File Exchange module"></a>
+Choose a connection engine, prepare your ARM input device and manage the modules available to your console.
 
-<sub>Interface preview without a connected console. Click an image to enlarge.</sub>
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <a href="docs/images/connection.jpg"><img src="docs/images/connection.jpg" width="420" alt="PC panel showing connection engines and hardware configuration"></a><br>
+      <sub><strong>Connection setup</strong><br>Choose an engine and configure the PC, ARM input device and console.</sub>
+    </td>
+    <td align="center" width="50%">
+      <a href="docs/images/app-library.jpg"><img src="docs/images/app-library.jpg" width="420" alt="PC panel showing module selection in the App library"></a><br>
+      <sub><strong>App library</strong><br>Browse available modules and select what to load on your Switch 2.</sub>
+    </td>
+  </tr>
+</table>
+
+<p align="center"><sub>Panel previews without a connected console. Click either image to enlarge.</sub></p>
+
+## IZlauncher
+
+**IZlauncher** is the console-side homebrew menu for NS2. Browse loaded apps, filter or search the library, and add available modules using controller or touch controls. The PC panel manages the connection and host components; IZlauncher provides the interface on your Switch 2.
+
+<p align="center">
+  <a href="docs/images/izlauncher.jpg"><img src="docs/images/izlauncher.jpg" width="680" alt="IZlauncher console menu with File Exchange selected, app navigation and search"></a><br>
+  <sub><strong>The console menu</strong> — File Exchange selected, with app navigation, search and the Add app shortcut.<br>Preview rendered locally from the release's actual console shaders. Click to enlarge.</sub>
+</p>
 
 ## What is included?
 

@@ -1,12 +1,22 @@
 # IZ2S Platform
 
-**0.16.0-rc.3 · Linux x64 / ARM64**
+**0.16.0-rc.4 · Linux x64 / ARM64**
 
 IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu shown on Switch 2 through SmileBASIC. The PC application, ARM input agent, console bootstrap and modules are installed/started separately.
 
 **Read the [detailed FAQ and practical guide](FAQ.md)** for plain-English explanations, folder locations, first setup, backups, Git, safe testing and troubleshooting.
 
 **Host OS:** Linux only. Windows and macOS are unsupported; ARM64 remains a declared target with incomplete hardware validation. [Support details](SUPPORT.md).
+
+
+## What’s new in 0.16.0-rc.4
+
+- **IZPSlauncher** joins IZlauncher as a native console shell. Choose it in the panel before the next session; it is discovered through the ordinary shell descriptor.
+- Blue portrait-card menu, categories and search, a lime mouse in a hat, and a new IZ logo with the author signature.
+- A single **Recent activity** feed replaces the two welcome panels. It shows completed installations, updates and removals with versions and local timestamps. Empty activity collapses to one row and does not leave a scrollable blank area.
+- **Remove from console** is available on loaded app cards in the PC panel and through **Minus** in either console shell. The package stays on the PC for loading again. Operations run at a menu boundary, after an active app returns.
+- Build instructions, release notes and a reusable release template are included with the source. File Exchange remains the only bundled application; streaming and YouTube are separate projects.
+
 
 ## Modules for IZ2S Platform
 
@@ -116,3 +126,27 @@ Independently authored IZMYSH code is licensed under **GPL-2.0-or-later**.
 See [LICENSE](LICENSE), [COPYRIGHT](COPYRIGHT) and [license scope](LICENSE-SCOPE.md).
 Existing component licenses and prior MIT grants remain applicable; this is not
 a blanket relicensing of third-party material.
+
+## Build from source
+
+The prepared installation archive already contains compiled console shaders. Use the source repository to modify and rebuild the menus:
+
+```sh
+git clone https://github.com/byizmysh/IZ2S-Platform.git
+cd IZ2S-Platform
+git checkout v0.16.0-rc.4
+node shells/izpslauncher/build.cjs
+node shells/izlauncher/server/build-app.cjs
+node distribution/verify.cjs
+node --test distribution/tests/*.test.cjs
+```
+
+Use Node.js 22 or newer. The existing installer guide lists the required Linux tools, Python/Pillow, DejaVu fonts and shader compilers. `node distribution/verify.cjs` validates descriptors, packaged modules, source syntax and documentation links.
+
+To create an installation archive from a clean, committed source tree:
+
+```sh
+node distribution/build.cjs
+```
+
+If rebuilding changed tracked shader/font files, review and commit those outputs before packaging. The builder refuses a dirty tree. It writes `dist/iz2s-platform-<version>-file-exchange.tar.gz` and the matching `.sha256` file, with the exact source commit recorded in `release.json` inside the archive. Private settings, downloads and experimental modules are excluded. See the [development guide](distribution/README-development.md) for isolated installation checks and the [release template](distribution/RELEASE-TEMPLATE.md) for the required release sections.

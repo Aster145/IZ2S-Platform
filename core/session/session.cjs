@@ -1003,6 +1003,12 @@ function createSessionManager({
       );
     }
   }
+  async function unloadPackages(ids) {
+    if(preview)throw Error('Preview cannot remove console modules');
+    const state=await snapshot();
+    if(!current?.runDirectory||current.status!=='running'||!state.connected)throw Error('Start and connect the launcher first');
+    return require('../packages/removal.cjs').queue(journal.session(current.id),ids,state.installed,'browser');
+  }
   async function configureConnection(body) {
     await recoveryReady;
     if (preview) throw Error('Preview mode does not change device connections');
@@ -1036,6 +1042,7 @@ function createSessionManager({
     hardStop,
     snapshot,
     loadPackages,
+    unloadPackages,
     setupAction,
     configureConnection,
     async retry() {

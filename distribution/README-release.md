@@ -2,11 +2,19 @@
 
 **0.16.0-rc.3 · Linux x64 / ARM64 · File Exchange release**
 
-IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu shown on Switch 2 through SmileBASIC. The PC application, ARM input agent, console bootstrap and modules are installed/started separately.
+IZ2S Platform runs a control panel on your computer. **IZlauncher** and **IZPSlauncher** are the menus shown on Switch 2 through SmileBASIC. The PC application, ARM input agent, console bootstrap and modules are installed/started separately.
 
 **Read the [detailed FAQ and practical guide](../FAQ.md)** for plain-English explanations, folder locations, first setup, backups, Git, safe testing and troubleshooting.
 
 **Host OS:** Linux only. Windows and macOS are unsupported; ARM64 remains a declared target with incomplete hardware validation. [Support details](../SUPPORT.md).
+
+## What’s new in 0.16.0-rc.4
+
+- **IZPSlauncher** joins IZlauncher as a native console shell. Choose it in the panel before the next session; it is discovered through the ordinary shell descriptor.
+- Blue portrait-card menu, categories and search, a lime mouse in a hat, and a new IZ logo with the author signature.
+- A single **Recent activity** feed replaces the two welcome panels. It shows completed installations, updates and removals with versions and local timestamps. Empty activity collapses to one row and does not leave a scrollable blank area.
+- **Remove from console** is available on loaded app cards in the PC panel and through **Minus** in either console shell. The package stays on the PC for loading again. Operations run at a menu boundary, after an active app returns.
+- Build instructions, release notes and a reusable release template are included with the source. File Exchange remains the only bundled application; streaming and YouTube are separate projects.
 
 ## What is included?
 

@@ -1,6 +1,6 @@
 # IZ2S Platform — FAQ and practical guide
 
-This guide is written for someone who wants to use and maintain the platform without already knowing its internals. It describes the current **0.16.0-rc.3** implementation. A feature being described here does not mean it was physically tested on every device.
+This guide is written for someone who wants to use and maintain the platform without already knowing its internals. It describes the current **0.16.0-rc.4** implementation. A feature being described here does not mean it was physically tested on every device.
 
 [Back to the main README](README.md)
 
@@ -527,3 +527,19 @@ Record the release version/commit if available, engine, module, last working ste
 | Launch | Starting a process/session from already prepared files |
 
 [Back to the main README](README.md)
+
+## Choosing IZPSlauncher and unloading apps
+
+### How do I select the blue console menu?
+
+Choose **IZPSlauncher** in the panel’s Console connection / Launch mode selector before starting the next session. The panel discovers both shell descriptors automatically. The current session keeps the shell it started with. IZlauncher remains available.
+
+### How do I remove a loaded app from the console menu?
+
+In the PC App library, click **Remove from console** on a loaded app card and confirm. Alternatively, select the app in either console shell, press **Minus**, then A to confirm or B to cancel. Touch also works on the footer action and confirmation buttons.
+
+This removes the session catalog entry. Its IZM package, PC component and saved settings remain available on the computer, so it can be loaded again. A module currently in use is not stopped; pending changes wait for a return to the console menu. There is no Uninstall from PC action.
+
+### What happens when there is no activity?
+
+IZPSlauncher shows one compact No recent activity row. It uses actual completed package jobs, never file modification timestamps. The feed and scroll limits grow with the available events and shrink when there are fewer rows. Example events in documentation screenshots are demonstration data.

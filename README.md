@@ -44,7 +44,7 @@ Choose a connection engine, prepare your ARM input device and manage the modules
 
 <p align="center">
   <a href="docs/images/izlauncher.jpg"><img src="docs/images/izlauncher.jpg" width="680" alt="IZlauncher console menu with File Exchange selected, app navigation and search"></a><br>
-  <sub><strong>The console menu</strong> — File Exchange selected, with app navigation, search and the Add app shortcut.<br>Preview rendered locally from the release's actual console shaders. Click to enlarge.</sub>
+  <sub><strong>The console menu</strong> — File Exchange selected, with app navigation, search and the Add app shortcut.</sub>
 </p>
 
 ## What is included?

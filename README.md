@@ -1,12 +1,19 @@
 # IZ2S Platform
 
-**0.16.0-rc.3 · Linux x64 / ARM64 · File Exchange release**
+**0.16.0-rc.3 · Linux x64 / ARM64**
 
 IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu shown on Switch 2 through SmileBASIC. The PC application, ARM input agent, console bootstrap and modules are installed/started separately.
 
 **Read the [detailed FAQ and practical guide](FAQ.md)** for plain-English explanations, folder locations, first setup, backups, Git, safe testing and troubleshooting.
 
 **Host OS:** Linux only. Windows and macOS are unsupported; ARM64 remains a declared target with incomplete hardware validation. [Support details](SUPPORT.md).
+
+## A quick look
+
+<a href="docs/images/connection.jpg"><img src="docs/images/connection.jpg" width="420" alt="Connection panel: engine selection and hardware setup"></a>
+<a href="docs/images/app-library.jpg"><img src="docs/images/app-library.jpg" width="420" alt="App library with the bundled File Exchange module"></a>
+
+<sub>Interface preview without a connected console. Click an image to enlarge.</sub>
 
 ## What is included?
 
@@ -18,7 +25,7 @@ Streaming, games, YouTube and test applications from the experimental project ar
 
 ## Install and start
 
-Extract the archive, open a terminal in the extracted directory, then run:
+Download the installation archive from [Releases](https://github.com/byizmysh/IZ2S-Platform/releases), extract it, open a terminal in the extracted directory, then run:
 
 ```sh
 ./install.sh --check

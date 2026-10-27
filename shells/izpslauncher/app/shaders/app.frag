@@ -66,7 +66,7 @@ vec3 focusSearchDraw(vec2 p,vec3 col){
  return col;
 }
 #include "ps-draw.glsl"
-#include "menu-removal-draw.glsl"
+#include "ps-removal.glsl"
 void main(){
  vec2 p=gl_FragCoord.xy;
 #ifdef IZ_CONTROLLERS
@@ -87,5 +87,5 @@ void main(){
  video=streamDraw(p);
  outColor=vec4(c.atlas[SB+41u]==1u?notification(p,video):video,1);return;}
 #endif
- vec3 col=psMenu(p);if(c.rows[1]!=0u)col=focusSearchDraw(p,col);col=menuRemovalDraw(p,col,1056.0);outColor=vec4(notification(p,col)*(1.0-c.transition.x),1);
+ vec3 col=psMenu(p);if(c.rows[1]!=0u)col=focusSearchDraw(p,col);col=psRemovalDraw(p,col);outColor=vec4(notification(p,col)*(1.0-c.transition.x),1);
 }

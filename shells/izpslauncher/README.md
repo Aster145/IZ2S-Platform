@@ -16,6 +16,8 @@ The blue menu includes portrait application cards, cyan focus, categories, searc
 
 Removal unloads the session's catalog copy. The PC package remains available to load again. The PC panel provides the same action on loaded application cards. A queued operation waits until the console returns to its menu; it does not stop an active application.
 
+![Remove from console confirmation](../../docs/images/izpslauncher-removal.png)
+
 ## Build from source
 
 From the repository root, with Node.js 22+, Python 3/Pillow, DejaVu Sans, glslangValidator and spirv-val installed:

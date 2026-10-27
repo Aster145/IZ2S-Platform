@@ -306,7 +306,7 @@ They exist in the experimental project and explain the architecture and known li
 
 ### Where do capture, compression and ports belong?
 
-The ordinary streaming module, displayed as **???**, owns capture, codecs, compression, audio and its listeners. Other game modules reuse its declared components. Video does not pass through the panel page for extra copying. A module's PC controls normally open in an adjacent tab.
+The **BlitBun** streaming module owns capture, codecs, compression, audio and its listeners. Other game modules reuse its declared components. Video does not pass through the panel page for extra copying. A module's PC controls normally open in an adjacent tab.
 
 ### Can I change resolution while streaming?
 

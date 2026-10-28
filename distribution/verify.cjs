@@ -2,7 +2,8 @@
 const fs=require('node:fs/promises'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),profile=require('./profile.json');
 async function verify(){
-  const docs=spawnSync('python3',[path.join(__dirname,'check-docs.py'),root],{encoding:'utf8'});if(docs.status!==0)throw Error(docs.stderr||docs.stdout||'Documentation check failed');console.log(docs.stdout.trim());
+  const python=require('../core/host-tools.cjs').python();
+  const docs=spawnSync(python.file,[...python.args,path.join(__dirname,'check-docs.py'),root],{encoding:'utf8',windowsHide:true});if(docs.status!==0)throw Error(docs.stderr||docs.stdout||'Documentation check failed');console.log(docs.stdout.trim());
   await require('../sdk/publish-modules.cjs').publish(root).then(r=>{if(r.errors.length)throw Error(JSON.stringify(r.errors));});
   const report=await require('../sdk/check.cjs').check(root);if(!report.valid)throw Error(JSON.stringify(report.errors));
   const shells=require('../core/descriptors.cjs').scan(root,'shell'),version=require('../package.json').version;

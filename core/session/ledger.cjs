@@ -1,8 +1,8 @@
-const fs=require('node:fs/promises'),path=require('node:path'),crypto=require('node:crypto');
+const fs=require('node:fs/promises'),path=require('node:path');
 const valid=/^[a-f0-9-]{36}$/;
 const redact=value=>String(value).replace(/Orange\s*Pi/gi,'Input bridge').replace(/V=START\([^)]*\)/g,'V=START(…)').replace(/(https?:\/\/[^\s#]+\/#)[a-f0-9]{24,64}/gi,'$1[private]').replace(/((?:token|secret|key)\s*[:=]\s*)[a-f0-9]{24,64}/gi,'$1[private]');
 async function readJson(file,fallback=null){try{return JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code==='ENOENT')return fallback;throw e;}}
-async function saveJson(file,value){await fs.mkdir(path.dirname(file),{recursive:true,mode:0o700});const temp=file+'.'+crypto.randomUUID()+'.tmp';await fs.writeFile(temp,JSON.stringify(value,null,2)+'\n',{mode:0o600});await fs.rename(temp,file);}
+const saveJson=require('../atomic-json.cjs').writeJson;
 function createLedger(root){
  const folder=path.join(root,'data/state/attempts');
  const location=id=>{if(!valid.test(id))throw Error('Invalid attempt identifier');return path.join(folder,id);};

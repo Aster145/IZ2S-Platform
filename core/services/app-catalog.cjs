@@ -3,6 +3,7 @@ const {execFile}=require('node:child_process');
 const {promisify}=require('node:util');
 const {inflateSync}=require('node:zlib');
 const run=promisify(execFile);
+function runPython(args, options){const p=require('../host-tools.cjs').python();return run(p.file,[...p.args,...args],{...options,windowsHide:true});}
 const ROOT=path.resolve(__dirname,'../../data/app-links'),MAX_APPS=32,SLOT_BYTES=131072,ATLAS_BYTES=1024*2048;
 const check=(v,m)=>{if(!v)throw Error(m);};
 async function asset(root,name,max){
@@ -65,7 +66,7 @@ async function readApp(directory,{validate=true}={}){
  const webp=icon.toString('ascii',0,4)==='RIFF'&&icon.toString('ascii',8,12)==='WEBP';
  check(png||webp,'Icon must be a PNG or WebP');
  if(png)check(icon.readUInt32BE(16)>0&&icon.readUInt32BE(16)<=4096&&icon.readUInt32BE(20)>0&&icon.readUInt32BE(20)<=4096,'Icon dimensions exceed 4096');
- if(validate)await run('python3',['-c','from PIL import Image; import sys; im=Image.open(sys.argv[1]); assert 0<im.width<=4096 and 0<im.height<=4096; im.verify()',files.icon.file],{timeout:10000,maxBuffer:65536});
+ if(validate)await runPython(['-c','from PIL import Image; import sys; im=Image.open(sys.argv[1]); assert 0<im.width<=4096 and 0<im.height<=4096; im.verify()',files.icon.file],{timeout:10000,maxBuffer:65536});
  const effects={},effectData={};
  check(m.audio===undefined||(m.audio.sampleRate===48000&&m.audio.channels===2&&m.audio.format==='s16le'),'Unsupported audio format');
  for(const [id,name] of Object.entries(m.audio?.effects||{})){
@@ -94,7 +95,7 @@ async function raster(catalog,directory,label='catalog'){
   labels.push({name:a.name,description:a.description,icon,transition:a.manifest.transition,displayOnly:a.manifest.displayOnly===true,builtin:a.manifest.builtin,scene:a.manifest.shellContribution?.scene});
  }
  await fs.writeFile(input,JSON.stringify(labels,null,2));
- await run('python3',[path.join(__dirname,'catalog-assets.py'),input,output],{timeout:15000,maxBuffer:65536});
+ await runPython([path.join(__dirname,'catalog-assets.py'),input,output],{timeout:15000,maxBuffer:65536});
  const bytes=await fs.readFile(output);check(bytes.length===MAX_APPS*SLOT_BYTES,'Invalid catalog raster');return bytes;
 }
 module.exports={ROOT,MAX_APPS,SLOT_BYTES,ATLAS_BYTES,asset,readApp,scan,summary,raster};

@@ -9,6 +9,7 @@ const {
   redact,
 } = require('../core/session/ledger.cjs');
 const UUID = /^[a-f0-9-]{36}$/;
+const processControl = require('../core/session/process-control.cjs');
 function create({
   root,
   settings,
@@ -101,11 +102,11 @@ function create({
   const log = (type, text) =>
     current ? ledger.append(current.id, type, text) : Promise.resolve();
   const persist = () => (current ? ledger.write(current) : Promise.resolve());
-  async function refresh() {
+  async function refresh(force = false) {
     if (preview || current) return probe;
     if (checking) return checking;
     checking = devices
-      .inspect()
+      .inspect({ refresh: force })
       .then((value) => (probe = value))
       .finally(() => (checking = null));
     return checking;
@@ -113,7 +114,7 @@ function create({
   async function fail(error, row = current) {
     if (!row || row.status === 'failed') return;
     if (current === row) {
-      terminate(true);
+      await terminate(true);
       child = null;
       if (row.inputJob) cancelInput(row).catch(() => {});
     }
@@ -157,7 +158,7 @@ function create({
   async function run(row, loader, plan) {
     if (current !== row || row.status === 'stopping') return;
     const command = plan.command || node;
-    child = spawn(command, plan.args || [], {
+    child = spawn(command, processControl.nodeArgs(plan.args || []), {
       cwd: plan.cwd || root,
       env: {
         ...process.env,
@@ -169,7 +170,8 @@ function create({
         HB_PORT: String(settings.consolePort),
       },
       detached: process.platform === 'linux',
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+      windowsHide: true,
     });
     const owned = child;
     let pending = '',
@@ -482,7 +484,7 @@ function create({
     } else throw Error('This setup step is unavailable');
     return { ok: true };
   }
-  function terminate(force = false) {
+  async function terminate(force = false) {
     if (!child) return;
     try {
       if (
@@ -491,7 +493,8 @@ function create({
         child.pid > 1
       )
         process.kill(-child.pid, force ? 'SIGKILL' : 'SIGTERM');
-      else child.kill(force ? 'SIGKILL' : 'SIGTERM');
+      else if (force) await processControl.forceStop(child);
+      else await processControl.requestStop(child);
     } catch (e) {
       if (e.code !== 'ESRCH') throw e;
     }
@@ -523,7 +526,7 @@ function create({
     row.status = 'stopping';
     await persist();
     await cancelInput(row);
-    terminate();
+    await terminate();
     if (!child) {
       row.status = 'cancelled';
       row.needsRestart = !!row.inputJob;
@@ -536,7 +539,7 @@ function create({
   async function hardStop() {
     await recoveryReady;
     const row = current || inputRecovery;
-    terminate(true);
+    await terminate(true);
     child = null;
     if (current) {
       current.status = 'cancelled';

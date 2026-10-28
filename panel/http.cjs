@@ -7,9 +7,11 @@ async function createWindowServer({
   root,
   manager,
   port,
+  onShutdown,
   token = crypto.randomBytes(24).toString('hex'),
 }) {
   let actualPort,
+    shutdownRequested = false,
     mutation = Promise.resolve(),
     mutationEpoch = 0;
   const assets = {
@@ -71,6 +73,8 @@ async function createWindowServer({
           moduleErrors: (await require('../core/modules.cjs').list(root))
             .errors,
         });
+      if (req.method === 'GET' && url.pathname === '/api/input/ports')
+        return reply(res, 200, { ports: await manager.inputPorts() });
       if (req.method === 'GET' && url.pathname === '/api/state') {
         manager.refresh().catch(() => {});
         return reply(res, 200, await manager.snapshot());
@@ -102,6 +106,19 @@ async function createWindowServer({
           error: 'The request must come from this application',
         });
       const body = await readBody(req);
+      if (url.pathname === '/api/shutdown' && onShutdown) {
+        reply(res, 202, { ok: true, stopping: true });
+        if (shutdownRequested) return;
+        shutdownRequested = true;
+        mutationEpoch++;
+        setImmediate(() => mutation.catch(() => {}).then(onShutdown).catch(error => {
+          shutdownRequested = false;
+          console.error('Shutdown failed: ' + error.message);
+        }));
+        return;
+      }
+      if (shutdownRequested && !['/api/stop', '/api/hard-stop'].includes(url.pathname))
+        return reply(res, 409, { error: 'The panel is stopping. Wait for cleanup before starting another operation.' });
       // Emergency stop must bypass a blocked ordinary mutation queue.
       if (url.pathname === '/api/hard-stop') {
         require('../core/host-modules.cjs').hardStop();
@@ -187,6 +204,8 @@ async function createWindowServer({
   return {
     server,
     token,
+    setStopping: value => { shutdownRequested = value; if (value) mutationEpoch++; },
+    drainMutations: () => mutation.catch(() => {}),
     url: 'http://127.0.0.1:' + actualPort + '/#' + token,
     close: () => new Promise((r) => server.close(r)),
   };

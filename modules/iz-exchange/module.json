@@ -8,6 +8,7 @@
   "moduleVersion": "1.1.1",
   "author": "IZMYSH and upstream contributors",
   "platforms": [
+    "win32-x64",
     "linux-x64",
     "linux-arm64"
   ],

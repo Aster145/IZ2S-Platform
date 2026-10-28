@@ -1,12 +1,20 @@
-# IZ2S Platform
+# IZ2S Platform — Windows fork
 
-**0.16.0-rc.5 · Linux x64 / ARM64**
+Windows x64 adaptation of [byizmysh/IZ2S-Platform](https://github.com/byizmysh/IZ2S-Platform), based on upstream **0.16.0-rc.5**. Original attribution, history and licenses are retained.
+
+**Windows 下载：[完整便携包](https://github.com/Aster145/IZ2S-Platform/releases/download/v0.16.0-rc.5-windows.1/IZ2S-Platform-Windows.zip) · [发行说明](https://github.com/Aster145/IZ2S-Platform/releases/tag/v0.16.0-rc.5-windows.1) · [中文使用说明](WINDOWS-README.md)**
+
+完整解压后，首次运行 `SETUP-WINDOWS.cmd`，然后运行 `START-WINDOWS.cmd`。网页支持中英文切换；输入设备使用已有的 ESP32-S3 TextKeyboard 固件，也保留可选的 Linux ARM 输入板。关闭网页会保留服务；完全退出请运行 `STOP-WINDOWS.cmd`。
+
+For Windows, download the **portable ZIP linked above**, extract it fully, then run `SETUP-WINDOWS.cmd` and `START-WINDOWS.cmd`. GitHub's **Source code** archives and `git clone` do **not** include the portable runtime. Setup checks the bundled files; it does not download dependencies. See [source setup](WINDOWS-README.md#从源码运行) if you want to provide your own tools.
+
+This fork adds Windows host support, ESP32-S3 serial input, Chinese/English web controls, bounded Windows file-write retries and File Exchange idle-refresh fixes. Switch menus remain in English. IZlauncher and File Exchange browsing/downloads were tested on Switch 2 system **23.0.1** with SmileBASIC **4.4.9**; IZPSlauncher has only host resource-generation validation. See [validation limits](WINDOWS-README.md#本次验证范围).
 
 IZ2S Platform runs a control panel on your computer. **IZlauncher** is the menu shown on Switch 2 through SmileBASIC. The PC application, ARM input agent, console bootstrap and modules are installed/started separately.
 
 **Read the [detailed FAQ and practical guide](FAQ.md)** for plain-English explanations, folder locations, first setup, backups, Git, safe testing and troubleshooting.
 
-**Host OS:** Linux only. Windows and macOS are unsupported; ARM64 remains a declared target with incomplete hardware validation. [Support details](SUPPORT.md).
+**Host OS:** This fork adds Windows x64 host support. Linux paths are retained; macOS is unsupported. Windows local validation and physical-device status are described in [Support details](SUPPORT.md).
 
 
 ## What’s new in 0.16.0-rc.5
@@ -61,7 +69,7 @@ Choose a connection engine, prepare your ARM input device and manage the modules
 
 BlitBun and VacooTube are available as [separate module downloads](#modules-for-iz2s-platform). Games and experimental test applications are **not bundled** in this release. Original-engine files are not downloaded by the installer.
 
-## Install and start
+## Linux installation (upstream)
 
 Download the installation archive from [Releases](https://github.com/byizmysh/IZ2S-Platform/releases), extract it, open a terminal in the extracted directory, then run:
 

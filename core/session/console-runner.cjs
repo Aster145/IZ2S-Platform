@@ -1,14 +1,17 @@
 // Start the server, then attach the separately owned console shell.
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const control = require('./process-control.cjs');
 const root = path.resolve(__dirname, '../..');
 const children = new Set();
 let stopping;
 const hostScript = 'engines/host.cjs';
 function launchStage(script, args = [], readyText) {
-  const child = spawn(process.execPath, [script, ...args], {
+  if (stopping) throw Error('Session startup cancelled');
+  const child = spawn(process.execPath, control.nodeArgs([script, ...args]), {
     cwd: root,
-    stdio: ['ignore', 'pipe', 'inherit'],
+    stdio: ['ignore', 'pipe', 'inherit', 'ipc'],
+    windowsHide: true,
   });
   child.script = script;
   children.add(child);
@@ -40,27 +43,9 @@ function launchStage(script, args = [], readyText) {
 }
 function closeSession() {
   if (stopping) return stopping;
-  stopping = (async () => {
-    async function end(child) {
-      if (!children.has(child)) return;
-      await new Promise((resolve) => {
-        const timer = setTimeout(resolve, 5000);
-        child.once('close', () => {
-          clearTimeout(timer);
-          resolve();
-        });
-        child.kill('SIGTERM');
-      });
-    }
-    // Close file-transfer handles and commit writes while RPC is still available.
-    await Promise.all(
-      [...children].filter((c) => c.script === 'core/console/host/ftp-service.cjs').map(end),
-    );
-    // Keep RPC alive until the audio owner has stopped its console output.
-    await Promise.all([...children].filter((c) => /\/game-audio\.cjs$/.test(c.script)).map(end));
-    await Promise.all([...children].filter((c) => c.script !== hostScript).map(end));
-    await Promise.all([...children].map(end));
-  })();
+  stopping = control.stopStages(children, hostScript);
+  // Signal/EventEmitter callers do not await a returned Promise.
+  stopping.catch((error) => console.error(error.message));
   return stopping;
 }
 // Auxiliary services never own the native connection's lifetime.
@@ -135,12 +120,18 @@ async function runQualifiedSession() {
     await closeSession();
   }
 }
-if (require.main === module) {
-  process.on('SIGINT', closeSession);
-  process.on('SIGTERM', closeSession);
+function startCli() {
+  require('./managed-stop.cjs');
+  let stopRequested = false;
+  const stop = () => { stopRequested = true; closeSession(); };
+  process.on('SIGINT', stop);
+  process.on('SIGTERM', stop);
   runQualifiedSession().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
+    if (!stopRequested) {
+      console.error(error);
+      process.exitCode = 1;
+    }
   });
 }
-module.exports = {watchAuxiliary, runQualifiedSession, closeSession};
+if (require.main === module) startCli();
+module.exports = {watchAuxiliary, runQualifiedSession, closeSession, startCli};

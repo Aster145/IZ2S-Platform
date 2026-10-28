@@ -4,6 +4,11 @@ function openPanel(url,{env=process.env,launch=spawn,exists=fs.existsSync,main=f
  const u=new URL(url);
  if(u.protocol!=='http:'||u.hostname!=='127.0.0.1'||u.pathname!=='/'||!/^#[a-f0-9]{48}$/.test(u.hash))throw Error('Invalid local panel URL');
  if(env.HB_OPEN_PANEL==='0')return false;
+ if(process.platform==='win32'){
+  const script="Start-Process -FilePath '"+u.href.replace(/'/g,"''")+"'";
+  const child=launch(require('../host-tools.cjs').powershell(),['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')],{env,windowsHide:true,stdio:'ignore'});
+  child.once('error',error=>console.error('Could not open the panel: '+error.message));child.unref();return true;
+ }
  const chrome=[env.HB_CHROME,'/usr/bin/google-chrome-stable','/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(p=>p&&exists(p));
  if(!chrome){
   if(!main){console.error('Chrome was not found. Open the capture link manually.');return false;}

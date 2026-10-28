@@ -9,8 +9,14 @@ async function main() {
     preview = args.includes('--preview'),
     noOpen = args.includes('--no-open'),
     restart = args.includes('--restart');
+  if (args.includes('--stop')) {
+    const stopped = await require('./core/session/panel-control.cjs').stopPanel(root, { preview });
+    console.log(stopped ? 'IZ2S Platform stopped.' : 'No running IZ2S Platform panel in this folder.');
+    return;
+  }
   if (!process.env.HB_FONT)
     for (const font of [
+      path.join(root, 'data/runtime/fonts/DejaVuSans.ttf'),
       '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
       '/usr/share/fonts/TTF/DejaVuSans.ttf',
     ])
@@ -27,6 +33,11 @@ async function main() {
   const { readJson, saveJson } = require('./core/session/ledger.cjs'),
     settings = await readJson(path.join(root, 'panel/profile.json')),
     node = process.execPath;
+  if (args.includes('--port')) {
+    const port = Number(args[args.indexOf('--port') + 1]);
+    if (!Number.isInteger(port) || port < 1024 || port > 65535) throw Error('--port requires a port from 1024 to 65535');
+    settings.panelPort = port;
+  }
   const stateFile = path.join(
       root,
       preview ? 'data/state/preview-window.json' : 'data/state/window.json',
@@ -46,7 +57,7 @@ async function main() {
     } catch {}
   if (running) {
     if (restart) {
-      process.kill(previous.pid, 'SIGTERM');
+      await require('./core/session/panel-control.cjs').stopPanel(root, { preview });
       const deadline = Date.now() + 20000;
       for (;;) {
         try { process.kill(previous.pid, 0); }
@@ -61,6 +72,7 @@ async function main() {
           env: { ...process.env, HB_OPEN_PANEL: '1' },
         });
       console.log('IZ2S Platform is already running.');
+      console.log(previous.url);
       return;
     }
   }
@@ -87,6 +99,7 @@ async function main() {
     root,
     manager,
     port: preview ? 0 : settings.panelPort,
+    onShutdown: finish,
     ...(previousToken ? { token: previousToken } : {}),
   });
   await saveJson(stateFile, {
@@ -107,11 +120,23 @@ async function main() {
   async function finish() {
     if (stopping) return;
     stopping = true;
-    await require('./core/host-modules.cjs').close();
-    await manager.stop().catch((e) => console.error(e.message));
-    await window.close();
-    const current=await readJson(stateFile,{});
-    if(current.pid===process.pid)await fs.rm(stateFile, { force: true });
+    window.setStopping(true);
+    try {
+      await window.drainMutations();
+      await require('./core/host-modules.cjs').close();
+      await manager.stop();
+      const deadline = Date.now() + 30000;
+      while (manager.ownsListener()) {
+        if (Date.now() >= deadline) throw Error('Session cleanup is still pending. Use Disconnect safely or the red STOP button in the panel.');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      const status = await manager.snapshot();
+      if (status.active) throw Error('The session has not finished stopping. Keep the panel open and resolve input cancellation or use the red STOP button.');
+      if (status.emergencyInputPending) throw Error('Input cancellation is unconfirmed. Keep the panel open and check the input device.');
+      await window.close();
+      const current=await readJson(stateFile,{});
+      if(current.pid===process.pid)await fs.rm(stateFile, { force: true });
+    } catch (error) { stopping = false; window.setStopping(false); throw error; }
   }
   process.once('SIGINT', () => finish().catch(console.error));
   process.once('SIGTERM', () => finish().catch(console.error));

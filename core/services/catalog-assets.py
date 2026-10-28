@@ -2,12 +2,14 @@
 import json, struct, sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from font_paths import font as resolve_font
 
-apps=json.loads(Path(sys.argv[1]).read_text())
+apps=json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
 assert len(apps)<=32
 slots=bytearray(32*131072)
 import os
-font=os.environ.get('HB_FONT','/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+font=resolve_font()
 for i,app in enumerate(apps):
     image=Image.new('L',(512,128)); draw=ImageDraw.Draw(image); sizes=[]
     for text,size,y in [(app['name'],34,0),(app['description'],18,64)]:

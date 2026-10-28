@@ -1,5 +1,6 @@
 // Only completed package jobs become activity; file mtimes are not install dates.
 const fs=require('node:fs/promises'),path=require('node:path'),{execFile}=require('node:child_process'),{promisify}=require('node:util');
+const {python}=require('../../../core/host-tools.cjs');
 const HEADER=0xf0000,DATA=0x100000,TEXT_BYTES=131072,MAGIC=0x50534143,MAX_EVENTS=6;
 function select(jobs){
  return jobs.filter(j=>j.status==='ready'&&Number.isFinite(Date.parse(j.completed)))
@@ -10,7 +11,8 @@ async function raster(events,apps,directory,label='activity'){
  await fs.mkdir(directory,{recursive:true});
  const input=path.join(directory,label+'.json'),output=path.join(directory,label+'.bin');
  await fs.writeFile(input,JSON.stringify({events:events.slice(0,MAX_EVENTS),apps:apps.map(a=>({id:a.id,name:a.name}))}));
- await promisify(execFile)('python3',[path.join(__dirname,'ps-activity.py'),input,output],{timeout:15000,maxBuffer:65536});
+ const runtime=python();
+ await promisify(execFile)(runtime.file,[...runtime.args,path.join(__dirname,'ps-activity.py'),input,output],{timeout:15000,maxBuffer:65536,windowsHide:true});
  const bytes=await fs.readFile(output);if(bytes.length!==128+TEXT_BYTES||bytes.readUInt32LE()!==MAGIC)throw Error('Invalid activity atlas');
  return {header:bytes.subarray(0,128),text:bytes.subarray(128)};
 }

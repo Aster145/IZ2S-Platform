@@ -3,6 +3,7 @@ const fs = require('node:fs/promises'),
   path = require('node:path'),
   { execFileSync } = require('node:child_process');
 const { tool } = require('./tools/toolchain.cjs');
+const { python } = require('../core/host-tools.cjs');
 async function headers(directory) {
   await fs.mkdir(directory, { recursive: true });
   for (const [source, target] of [
@@ -16,10 +17,10 @@ function compile(source, output) {
   execFileSync(
     tool('GLSLANG', 'glslangValidator'),
     ['-V', '-Os', '-g0', '--target-env', 'vulkan1.0', source, '-o', output],
-    { stdio: 'inherit' },
+    { stdio: 'inherit', windowsHide: true },
   );
   execFileSync(tool('SPIRV_VAL', 'spirv-val'), ['--target-env', 'vulkan1.0', output], {
-    stdio: 'inherit',
+    stdio: 'inherit', windowsHide: true,
   });
 }
 async function buildApp(directory) {
@@ -31,7 +32,17 @@ async function buildApp(directory) {
       path.join(directory, 'app.' + stage + '.spv'),
     );
 }
-module.exports = { headers, compile, buildApp };
+async function buildLauncher(directory) {
+  directory = path.resolve(directory);
+  const shaders = path.join(directory, 'shaders'), runtime = python();
+  await headers(shaders);
+  execFileSync(runtime.file, [...runtime.args, path.join(directory, 'launcher-text.py')], {
+    stdio: 'inherit', windowsHide: true,
+  });
+  for (const stage of ['vert', 'frag', 'comp'])
+    compile(path.join(shaders, 'launcher.' + stage), path.join(shaders, 'launcher.' + stage + '.spv'));
+}
+module.exports = { headers, compile, buildApp, buildLauncher };
 if (require.main === module)
   buildApp(process.argv[2] || '.').catch((e) => {
     console.error(e);

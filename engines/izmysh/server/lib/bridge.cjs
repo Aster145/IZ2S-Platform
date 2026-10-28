@@ -6,7 +6,58 @@ const path = require("node:path");
 
 // Stage programs share one native connection through this local, serialized
 // bridge. Its address and token exist only in the current launch directory.
-async function serve(native, directory) {
+function createDiagnostics(directory, {
+  fileSystem = fs,
+  retryDelays = [10, 25, 50],
+  warn = (error) => console.warn('Bridge diagnostic update skipped: ' + error.message),
+} = {}) {
+  let warned = false;
+  return async (row, statistics) => {
+    if (!directory) return;
+    let temporary;
+    try {
+      if (row.status === 'failed') {
+        await fileSystem.writeFile(path.join(directory, 'bridge-failure.json'), JSON.stringify(row, null, 2));
+        try {
+          await fileSystem.writeFile(path.join(directory, 'bridge-first-failure.json'), JSON.stringify(row, null, 2), { flag: 'wx' });
+        } catch (error) {
+          if (error.code !== 'EEXIST') throw error;
+        }
+        await fileSystem.appendFile(path.join(directory, 'bridge-failures.jsonl'), JSON.stringify(row) + '\n');
+      }
+      const file = path.join(directory, 'bridge-progress.json');
+      temporary = file + '.' + process.pid + '.' + crypto.randomUUID() + '.tmp';
+      await fileSystem.writeFile(temporary, JSON.stringify({ ...row, statistics }, null, 2), { flag: 'wx', mode: 0o600 });
+      // Windows readers/antivirus may briefly hold the destination without
+      // delete sharing. Retry only the diagnostic rename, never native work.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await fileSystem.rename(temporary, file);
+          temporary = null;
+          break;
+        } catch (error) {
+          if (!['EPERM', 'EACCES', 'EBUSY'].includes(error.code) || attempt >= retryDelays.length) throw error;
+          await new Promise((resolve) => setTimeout(resolve, retryDelays[attempt]));
+        }
+      }
+    } catch (error) {
+      // These files describe a native result; they must never determine it.
+      // In particular, a failed final save must not turn a successful hardware
+      // write into an RPC error, or hide the original native failure.
+      if (!warned) {
+        warned = true;
+        try { warn(error); } catch {}
+      }
+    } finally {
+      if (temporary) {
+        try { await fileSystem.rm(temporary, { force: true }); } catch {}
+      }
+    }
+  };
+}
+
+async function serve(native, directory, diagnosticOptions) {
+  let closing = false, closePromise;
   const token = crypto.randomBytes(32).toString("hex");
   const queue = require('./request-queue.cjs').create();
   const statistics = {
@@ -17,34 +68,8 @@ async function serve(native, directory) {
     writtenBytes: 0,
     commands: {},
   };
-  async function save(row) {
-    if (!directory) return;
-    if (row.status === "failed") {
-      await fs.writeFile(
-        path.join(directory, "bridge-failure.json"),
-        JSON.stringify(row, null, 2),
-      );
-      try {
-        await fs.writeFile(
-          path.join(directory, "bridge-first-failure.json"),
-          JSON.stringify(row, null, 2),
-          { flag: "wx" },
-        );
-      } catch (error) {
-        if (error.code !== "EEXIST") throw error;
-      }
-      await fs.appendFile(
-        path.join(directory, "bridge-failures.jsonl"),
-        JSON.stringify(row) + "\n",
-      );
-    }
-    const file = path.join(directory, "bridge-progress.json");
-    await fs.writeFile(
-      file + ".tmp",
-      JSON.stringify({ ...row, statistics }, null, 2),
-    );
-    await fs.rename(file + ".tmp", file);
-  }
+  const diagnostics = createDiagnostics(directory, diagnosticOptions);
+  const save = (row) => diagnostics(row, statistics);
   const enqueue = (task, info = { command: "keepalive" }) => {
     const queuedAt=performance.now();
     return queue.enqueue(async () => {
@@ -158,6 +183,10 @@ async function serve(native, directory) {
     throw Error("Unknown bridge command");
   }
   const server = http.createServer(async (req, res) => {
+    if (closing) {
+      res.writeHead(503, { Connection: 'close' }).end();
+      return;
+    }
     if (
       req.method !== "POST" ||
       req.url !== "/" ||
@@ -193,10 +222,12 @@ async function serve(native, directory) {
           (n, s) => n + (Number.isInteger(s?.length) ? s.length : 0),
           0,
         );
+      if (closing) throw Error('Native bridge is stopping');
       const result = await (request.command === "status"
         ? handle(request)
         : enqueue(() => handle(request), info));
       res.setHeader("Content-Type", "application/json");
+      if (closing) res.setHeader('Connection', 'close');
       res.end(
         JSON.stringify(result, (_, value) =>
           typeof value === "bigint" ? value.toString() : value,
@@ -216,7 +247,7 @@ async function serve(native, directory) {
   let lastActivity = 0;
   let heartbeatPending = false;
   const heartbeat = setInterval(() => {
-    if (heartbeatPending) return;
+    if (closing || heartbeatPending) return;
     heartbeatPending = true;
     enqueue(async () => {
       if (native.connection.error) return;
@@ -238,13 +269,19 @@ async function serve(native, directory) {
     keepAwake(value) {
       activity = value;
     },
-    async close() {
+    close() {
+      if (closePromise) return closePromise;
+      closing = true;
       clearInterval(heartbeat);
-      server.closeAllConnections();
-      await new Promise((resolve) => server.close(resolve));
-      await queue.idle();
+      // Stop accepting work, but return all accepted RPC responses before the
+      // native connection is retired. In-flight file writes must not be cut off.
+      closePromise = (async () => {
+        await new Promise((resolve) => server.close(resolve));
+        await queue.idle();
+      })();
+      return closePromise;
     },
   };
 }
 
-module.exports = { serve };
+module.exports = { serve, createDiagnostics };

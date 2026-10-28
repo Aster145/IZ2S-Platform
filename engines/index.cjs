@@ -16,12 +16,12 @@ function create(ROOT = require('../core/root.cjs')) {
       arity: d.bootstrap?.arity,
       bootstrap: d.bootstrap?.file,
       bootstrapDescriptor: d.bootstrap,
-      availableIn: [
+      availableIn: d.supported ? [
         'original',
         ...scan(ROOT, 'shell')
           .items.filter((shell) => d.modes.includes('izlauncher'))
           .map((shell) => shell.id),
-      ],
+      ] : [],
       menu: readMenu(d),
       settings: d.defaultSettings || {},
     }));
@@ -106,9 +106,9 @@ function create(ROOT = require('../core/root.cjs')) {
         for (const name of ['core', 'sdk', 'modules', 'profiles', 'hardware', 'shells'])
           try {
             await af.symlink(
-              path.relative(cache, path.join(ROOT, name)),
+              process.platform === 'win32' ? path.join(ROOT, name) : path.relative(cache, path.join(ROOT, name)),
               path.join(cache, name),
-              'dir',
+              process.platform === 'win32' ? 'junction' : 'dir',
             );
           } catch (e) {
             if (e.code !== 'EEXIST') throw e;
@@ -147,6 +147,7 @@ function create(ROOT = require('../core/root.cjs')) {
     };
   }
   function available(id, runtime) {
+    if (!find(id).supported) return false;
     return runtime === 'original'
       ? find(id).modes.includes('original')
       : find(id).modes.includes('izlauncher') &&

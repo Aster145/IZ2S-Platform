@@ -2,7 +2,7 @@ const fs=require('node:fs/promises'),path=require('node:path');
 const catalogTools=require('./app-catalog.cjs');
 const {prepare}=require('./gpu-app.cjs');
 const check=(v,m)=>{if(!v)throw Error(m);};
-async function atomic(file,value){const temp=file+'.tmp';await fs.writeFile(temp,JSON.stringify(value,null,2));await fs.rename(temp,file);}
+const atomic=require('../atomic-json.cjs').writeJson;
 async function create({rpc,menu,directory,prepareApp=prepare,prepareMenu=async()=>{}}){
  const mapped=menu.controls.mapped,cache=new Map(),closings=new WeakMap();let generation=0,refreshSeen=0,menuState=await rpc.read(mapped,1024);
  const builtinHosts=require('../builtin-hosts.cjs').create({context:{rpc,mapped,directory}});

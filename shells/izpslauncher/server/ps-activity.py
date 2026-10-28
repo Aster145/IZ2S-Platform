@@ -3,9 +3,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 import json, struct, sys
+sys.path.insert(0,str(Path(__file__).resolve().parent))
 from ps_fonts import font
 
-source=json.loads(Path(sys.argv[1]).read_text())
+source=json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'))
 events=source['events'][:6]
 apps=source['apps']
 image=Image.new('L',(1024,512))

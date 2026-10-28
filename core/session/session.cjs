@@ -3,6 +3,7 @@ const fs = require('node:fs/promises'),
   crypto = require('node:crypto'),
   { spawn } = require('node:child_process');
 const defaultSourceChecks = require('./source-check.cjs');
+const processControl = require('./process-control.cjs');
 const bootstrapProfile = (root) =>
   readJson(path.join(root, 'data/state/bootstrap-profile.json'), {
     recovery: false,
@@ -92,7 +93,7 @@ function createSessionManager({
     if (!force && Date.now() - lastCheck < 4500) return probe;
     checking = (async () => {
       try {
-        probe = await devices.inspect();
+        probe = await devices.inspect({ refresh: force });
         lastCheck = Date.now();
         return probe;
       } finally {
@@ -458,7 +459,8 @@ function createSessionManager({
       cwd: execution.cwd || root,
       env: { ...env, ...execution.env },
       detached: process.platform === 'linux',
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
+      windowsHide: true,
     });
     const ownedChild = child;
     let output = '',
@@ -490,7 +492,9 @@ function createSessionManager({
         );
         inputTask.catch(async (e) => {
           if (current?.id === row.id && current.status !== 'stopping') {
-            child?.kill('SIGTERM');
+            await processControl.requestStop(child).catch((stopError) =>
+              record('error', 'Unable to request session cleanup: ' + stopError.message),
+            );
             await failure(e);
           }
         });
@@ -513,7 +517,7 @@ function createSessionManager({
               ownedChild.pid > 1
             )
               killGroup(ownedChild.pid);
-            else ownedChild.kill('SIGKILL');
+            else await processControl.forceStop(ownedChild);
           } catch (e) {
             if (e.code !== 'ESRCH') throw e;
           }
@@ -712,7 +716,7 @@ function createSessionManager({
       if (row.inputActive || (row.kind === 'launch' && ownedChild))
         await timeout(arm.halt(row.inputJob || row.id), graceMs);
       if (current !== row) return;
-      ownedChild?.kill('SIGTERM');
+      await processControl.requestStop(ownedChild);
       if (row.kind === 'bootstrap' || !ownedChild) {
         row.status = 'cancelled';
         row.needsRestart = row.kind === 'bootstrap' || !!row.runDirectory;
@@ -824,7 +828,7 @@ function createSessionManager({
         } catch (e) {
           if (e.code !== 'ESRCH') throw e;
         }
-      } else ownedChild.kill('SIGKILL');
+      } else await processControl.forceStop(ownedChild);
       if (child === ownedChild) child = null;
     }
     if (row) {

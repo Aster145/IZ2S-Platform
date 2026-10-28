@@ -1,0 +1,35 @@
+{
+  "format": "izlauncher.profile",
+  "apiVersion": 1,
+  "id": "pc-esp32s3",
+  "name": "PC + ESP32-S3",
+  "version": "1.0.0",
+  "executionHost": "pc",
+  "inputAdapter": "esp32s3-serial",
+  "description": "Server on this PC; existing ESP32-S3 TextKeyboard receives text over UART and sends USB keyboard input to Switch.",
+  "entry": "entry.cjs",
+  "fields": [],
+  "platforms": ["win32-x64", "linux-x64", "linux-arm64"],
+  "nodes": [
+    {"id": "server", "device": "linux-host", "roles": ["server"]},
+    {"id": "input", "device": "esp32s3-textkeyboard", "roles": ["input"]},
+    {"id": "console", "device": "switch2", "roles": ["console"]}
+  ],
+  "links": [
+    {"id": "serial", "from": "server", "to": "input", "type": "serial"},
+    {"id": "control", "from": "input", "to": "console", "type": "usb-hid"},
+    {"id": "stream", "from": "server", "to": "console", "type": "network"}
+  ],
+  "ui": {
+    "combined": false,
+    "checks": [
+      {"id": "server", "label": "Server", "icon": "i-server"},
+      {"id": "arm", "label": "ESP32-S3 serial input", "icon": "i-arm"},
+      {"id": "usb", "label": "USB/OTG connection confirmation", "icon": "i-usb"},
+      {"id": "lan", "label": "Console", "icon": "i-switch"}
+    ]
+  },
+  "order": -1,
+  "selectable": true,
+  "unavailableReason": ""
+}

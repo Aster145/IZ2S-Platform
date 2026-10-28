@@ -54,7 +54,7 @@ async function create({
     ...options,
   });
   return {
-    async inspect() {
+    async inspect(options = {}) {
       if (configuration.setupRequired)
         return require('./index.cjs').present(configuration,{
           at: new Date().toISOString(),
@@ -71,7 +71,7 @@ async function create({
                 : 'Finish hardware configuration to continue.',
           })),
         });
-      const result = await base.inspect(),
+      const result = await base.inspect(options),
         items = result.items.map((item) => ({ ...item }));
       const input = items.find((r) => r.id === 'arm'),
         usb = items.find((r) => r.id === 'usb');

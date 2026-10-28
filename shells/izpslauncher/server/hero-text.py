@@ -2,7 +2,9 @@
 from pathlib import Path
 from PIL import Image,ImageDraw,ImageFont
 import json,os,struct,sys
-apps=json.loads(Path(sys.argv[1]).read_text());slots=bytearray(Path(sys.argv[2]).read_bytes());font='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from ps_fonts import font as resolve_font
+apps=json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'));slots=bytearray(Path(sys.argv[2]).read_bytes());font=resolve_font('DejaVuSans-Bold.ttf')
 for i,app in enumerate(apps):
  text=app['name'];size=122
  while size>26:

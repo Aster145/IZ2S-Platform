@@ -39,10 +39,12 @@ async function main(args = process.argv.slice(2)) {
     bridge,
     connected,
     stopping = false;
+  let resolveStop;
+  const stopped = new Promise((resolve) => { resolveStop = resolve; });
   const stop = () => {
     stopping = true;
     cancellation.abort();
-    connected?.connection.close();
+    resolveStop();
   };
   process.once("SIGINT", stop);
   process.once("SIGTERM", stop);
@@ -68,7 +70,9 @@ async function main(args = process.argv.slice(2)) {
       },
     });
     native = new NativeClient(connected.connection, connected.addresses);
+    if (stopping) return;
     record.qualification = await qualify(native);
+    if (stopping) return;
     connected.connection.timeout = 120000;
     bridge = await serve(native, directory);
     bridge.keepAwake(record.qualification.activity);
@@ -91,11 +95,15 @@ async function main(args = process.argv.slice(2)) {
       { mode: 0o600 },
     );
     console.log("Qualified native session ready.");
-    await new Promise((resolve) => {
+    let onClose;
+    const disconnected = new Promise((resolve) => {
       const socket = connected.connection.socket;
-      socket.once("close", resolve);
+      onClose = resolve;
+      socket.once("close", onClose);
       if (socket.destroyed || connected.connection.error) resolve();
     });
+    await Promise.race([disconnected, stopped]);
+    connected.connection.socket.removeListener("close", onClose);
     if (native.connection.error && !stopping)
       record.disconnect = native.connection.error.message;
   } catch (error) {

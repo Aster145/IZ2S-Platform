@@ -2,8 +2,7 @@
 const fs = require('node:fs/promises'),
   path = require('node:path'),
   net = require('node:net'),
-  os = require('node:os'),
-  crypto = require('node:crypto');
+  os = require('node:os');
 const ROOT = path.resolve(__dirname, '..');
 const definitions = (root=ROOT) => {
  const actual=require('node:fs').existsSync(path.join(root,'hardware/configurations'))||require('node:fs').existsSync(path.join(root,'profiles'))?root:ROOT;
@@ -11,6 +10,7 @@ const definitions = (root=ROOT) => {
  return require('../hardware/index.cjs').configurations(actual,hardwareRoot).items;
 };
 const clone = (value) => JSON.parse(JSON.stringify(value));
+const defaultId = root => process.platform === 'win32' && definitions(root).some(d=>d.id==='pc-esp32s3') ? 'pc-esp32s3' : 'pc-arm';
 function list(root=ROOT) {
   return definitions(root).filter(d=>d.panelVisible!==false).sort((a,b)=>(a.order??100)-(b.order??100)||a.name.localeCompare(b.name)).map((d) => ({ ...clone(d), settingsSchema: clone(d.fields) }));
 }
@@ -80,11 +80,11 @@ async function load(root = ROOT) {
     if (!definitions(root).some((d) => d.id === saved.selected))
       throw Error('Unknown saved launch configuration');
     const definition=definitions(root).find(d=>d.id===saved.selected);
-    const selected=definition.selectable===false||definition.panelVisible===false?'pc-arm':saved.selected;
+    const selected=definition.selectable===false||definition.panelVisible===false?defaultId(root):saved.selected;
     return { selected, profiles: saved.profiles || {} };
   } catch (e) {
     if (e.code !== 'ENOENT') throw e;
-    return { selected: 'pc-arm', profiles: {} };
+    return { selected: defaultId(root), profiles: {} };
   }
 }
 async function save(root = ROOT, { selected = 'pc-arm', profiles = {} } = {}) {
@@ -95,18 +95,8 @@ async function save(root = ROOT, { selected = 'pc-arm', profiles = {} } = {}) {
   for (const [id, value] of Object.entries(profiles)) resolve(id, { root, profile: value });
   const folder = path.join(root, 'data/state'),
     file = path.join(folder, 'launch-configurations.json'),
-    temporary = file + '.' + crypto.randomUUID() + '.tmp',
     value = { version: 1, selected, profiles: clone(profiles) };
-  await fs.mkdir(folder, { recursive: true, mode: 0o700 });
-  try {
-    await fs.writeFile(temporary, JSON.stringify(value, null, 2) + '\n', {
-      flag: 'wx',
-      mode: 0o600,
-    });
-    await fs.rename(temporary, file);
-  } finally {
-    await fs.rm(temporary, { force: true });
-  }
+  await require('../core/atomic-json.cjs').writeJson(file, value);
   return value;
 }
 function createInputLink({ root = ROOT, configuration, ...options }) {

@@ -38,9 +38,21 @@ async function main() {
   };
   let native,
     bridge,
+    connected,
+    stopping = false,
     stateWrites = Promise.resolve(),
     actualProtocol = transport.protocol,
     actualResumable = transport.resumable;
+  const cancellation = new AbortController();
+  let resolveStop;
+  const stopped = new Promise((resolve) => { resolveStop = resolve; });
+  const stop = () => {
+    stopping = true;
+    cancellation.abort();
+    resolveStop();
+  };
+  process.once('SIGINT', stop);
+  process.once('SIGTERM', stop);
   const state = (event) => {
     const snapshot = {
       ...event,
@@ -72,7 +84,8 @@ async function main() {
       protocol: transport.protocol,
       resumable: transport.resumable,
     });
-    const connected = await transport.listen({
+    connected = await transport.listen({
+      signal: cancellation.signal,
       onRejected: console.error,
       onResumeState: state,
       onWaiting() {
@@ -97,7 +110,9 @@ async function main() {
     native = require('../core/session-api.cjs').validateNative(
       transport.native(connected),
     );
+    if (stopping) return;
     record.qualification = await transport.qualify(native);
+    if (stopping) return;
     const peer = connected.connection.socket.remoteAddress?.replace(
       /^::ffff:/,
       '',
@@ -143,19 +158,15 @@ async function main() {
       { mode: 0o600 },
     );
     console.log('Qualified native session ready for graphics inspection.');
-    await new Promise((resolve) => {
+    let onClose;
+    const disconnected = new Promise((resolve) => {
       const socket = connected.connection.socket;
-      const done = () => {
-        process.removeListener('SIGINT', done);
-        process.removeListener('SIGTERM', done);
-        socket.removeListener('close', done);
-        resolve();
-      };
-      socket.once('close', done);
-      process.once('SIGINT', done);
-      process.once('SIGTERM', done);
-      if (socket.destroyed || connected.connection.error) done();
+      onClose = resolve;
+      socket.once('close', onClose);
+      if (socket.destroyed || connected.connection.error) resolve();
     });
+    await Promise.race([disconnected, stopped]);
+    connected.connection.socket.removeListener('close', onClose);
     if (native.connection.error)
       record.disconnect = native.connection.error.message;
     if (protocol !== 2)
@@ -165,15 +176,20 @@ async function main() {
         at: new Date().toISOString(),
       });
   } catch (error) {
-    record.error = error.stack;
-    throw error;
+    if (!stopping) {
+      record.error = error.stack;
+      throw error;
+    }
   } finally {
+    process.removeListener('SIGINT', stop);
+    process.removeListener('SIGTERM', stop);
     try {
       await bridge?.close();
     } finally {
       try {
         await native?.stop();
       } finally {
+        connected?.connection.close();
         await stateWrites;
         record.completed = new Date().toISOString();
         await fs.writeFile(

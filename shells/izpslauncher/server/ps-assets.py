@@ -1,7 +1,8 @@
 """Build IZPS typography in unused shell atlas space; preserve the shared ABI."""
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
-import json,zlib
+import json,zlib,sys
+sys.path.insert(0,str(Path(__file__).resolve().parent))
 from ps_fonts import font
 root=Path(__file__).resolve().parent.parent
 regular=font()

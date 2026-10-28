@@ -1,5 +1,4 @@
-const fs = require('node:fs/promises'),
-  path = require('node:path'),
+const path = require('node:path'),
   os = require('node:os');
 const { readJson, saveJson } = require('./ledger.cjs');
 const network = require('./network-discovery.cjs');
@@ -16,13 +15,10 @@ async function createConnections({
   settings,
   run,
   interfaces = () => os.networkInterfaces(),
-  isWireless = (name) =>
-    fs.stat('/sys/class/net/' + name + '/wireless').then(
-      () => true,
-      () => false,
-    ),
+  isWireless,
   discover = network.discover,
 }) {
+  const hostNetwork = require('../host-network.cjs').create({ run, interfaces });
   const file = path.join(root, 'data/state/connections.json'),historyFile=path.join(root,'data/state/console-addresses.json');
   const storedHistory=await readJson(historyFile,{});let consoleHistory=[],historySave=Promise.resolve();
   for(const row of Array.isArray(storedHistory.observations)?storedHistory.observations:[]){if(!network.privateIP(row?.address)||!modes.includes(row.mode)||!Number.isFinite(Date.parse(row.verifiedAt)))continue;consoleHistory=consoleHistory.filter(old=>old.mode!==row.mode&&old.address!==row.address);consoleHistory.push({address:row.address,mode:row.mode,verifiedAt:row.verifiedAt});}
@@ -166,10 +162,11 @@ async function createConnections({
   async function refresh() {
     if (checking) return checking;
     checking = (async () => {
+      const wireless = isWireless ? null : await hostNetwork.wirelessNames().catch(() => new Set());
       hosts = (
         await Promise.all(
           Object.entries(interfaces()).map(async ([name, list]) => {
-            const mode = (await isWireless(name)) ? 'wifi' : 'lan';
+            const mode = (isWireless ? await isWireless(name) : wireless.has(name)) ? 'wifi' : 'lan';
             return list
               .filter(
                 (a) =>
@@ -193,19 +190,13 @@ async function createConnections({
       errors = [];
       if (run) {
         try {
-          const routes = JSON.parse(
-            (
-              await run('ip', ['-json', 'route', 'show', 'default'], {
-                timeout: 1500,
-              })
-            ).stdout,
-          );
+          const routes = await hostNetwork.defaultRoutes();
           defaultDevice =
             routes
               .sort((a, b) => (a.metric || 0) - (b.metric || 0))
               .find((r) => hosts.some((h) => h.name === r.dev))?.dev || null;
         } catch {
-          /* NIC discovery still works without iproute2. */
+          /* NIC discovery still works if the route utility is unavailable. */
         }
         try {
           const result = await discover({

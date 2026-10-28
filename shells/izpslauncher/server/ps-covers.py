@@ -2,8 +2,9 @@
 from PIL import Image,ImageOps,ImageDraw,ImageFont,ImageFilter
 from pathlib import Path
 import json,sys,struct
+sys.path.insert(0,str(Path(__file__).resolve().parent))
 from ps_fonts import font as ps_font
-apps=json.loads(Path(sys.argv[1]).read_text());slots=bytearray(Path(sys.argv[2]).read_bytes())
+apps=json.loads(Path(sys.argv[1]).read_text(encoding='utf-8'));slots=bytearray(Path(sys.argv[2]).read_bytes())
 font=ps_font('DejaVuSans-Bold.ttf')
 colors=[(29,107,158),(169,69,23),(136,28,33),(40,58,119),(47,106,110),(106,46,132)]
 for i,app in enumerate(apps):

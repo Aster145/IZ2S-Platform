@@ -13,6 +13,7 @@ function invoke(
     const child = spawn(file, args, {
       cwd,
       env,
+      windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stdout = '',
@@ -79,6 +80,7 @@ async function inspectConsolePaths({
   hostInterface,
   run,
   mode,
+  hostNetwork = require('../core/host-network.cjs').create({ run }),
 }) {
   const { modeName } = require('../core/session/connections.cjs');
   const candidates = connections?.candidates?.() || [
@@ -119,35 +121,16 @@ async function inspectConsolePaths({
               ' · switch the connection or connect via ' +
               modeName(mode),
           );
-        const route = JSON.parse(
-          (
-            await run('ip', ['-json', 'route', 'get', address], {
-              timeout: 4000,
-            })
-          ).stdout,
-        )[0];
+        const route = await hostNetwork.routeTo(address);
         if (!route?.dev || route.dev === 'lo')
           throw Error('No route to the console');
         if (hostInterface && route.dev !== hostInterface)
           throw Error('Server and console are on different networks');
-        const ping = await run(
-          'ping',
-          [
-            '-n',
-            ...(settings.consoleHost ? ['-I', settings.consoleHost] : []),
-            '-c',
-            '1',
-            '-W',
-            '1',
-            address,
-          ],
-          { timeout: 2500 },
-        ).catch(() => {
+        const ms = await hostNetwork.ping(address, settings.consoleHost).catch(() => {
           throw Error(
             'Console is not reachable via ' + modeName(mode) + ' · ' + address,
           );
         });
-        const ms = Number(ping.stdout.match(/time[=<]([\d.]+)\s*ms/)?.[1]);
         return {
           ...candidate,
           ready: true,
@@ -204,7 +187,7 @@ function createDeviceChecks({
   portAvailable = availablePort,
 }) {
   let cachedTools;
-  async function inspect() {
+  async function inspect({ refresh = false } = {}) {
     await connections?.refresh();
     const { modeName } = require('../core/session/connections.cjs'),
       mode = (id) => connections?.mode(id) || 'lan';
@@ -252,7 +235,7 @@ function createDeviceChecks({
         )
           throw Error('Console port is already in use');
         if (!cachedTools) {
-          await run(node, ['hardware/dependencies.cjs', '--host-only'], {
+          await run(node, ['hardware/dependencies.cjs', '--host-only', ...(requiresArmAddress ? ['--arm'] : [])], {
             cwd: root,
             env: { ...process.env, NODE: node },
             timeout: 20000,
@@ -276,7 +259,7 @@ function createDeviceChecks({
                   modeName(mode('arm')) +
                   ' address, or install its IZ2S discovery service',
           );
-        return arm.inspect();
+        return arm.inspect({ refresh });
       })(),
       inspectConsolePaths({ connections, settings, hostInterface, run, mode }),
     ]);
@@ -306,13 +289,16 @@ function createDeviceChecks({
           ' · ' +
           modeName(mode('arm')) +
           ' · ' +
-          (settings.armAddress || '10.42.0.2');
+          (settings.armAddress || 'local input');
+      if (h.detail) rows[1].detail = h.detail;
       rows[2].ready = !!h.reachable && !!h.keyboard && !h.keyboardBusy;
       rows[2].detail = !h.reachable ? 'USB state unavailable until ARM reconnects' : h.keyboardBusy
         ? 'Input device is busy'
         : h.keyboard
           ? 'USB host configured'
           : h.usbState || 'Connect the USB data cable';
+      if (h.usbDetail && !h.keyboardBusy) rows[2].detail = h.usbDetail;
+      if (h.usbReadySource === 'user-confirmed' && h.reachable && h.keyboard) rows[2].confirmed = true;
     } else {
       rows[1].detail = peer.reason.message.startsWith('Set the ARM')
         ? peer.reason.message

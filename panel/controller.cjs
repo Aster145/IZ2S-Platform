@@ -155,6 +155,11 @@ async function create({ root, settings: defaults, node, preview = false }) {
   }
   return {
     preview,
+    async inputPorts() {
+      if (preview) return [];
+      if (configuration.inputAdapter !== 'esp32s3-serial') return [];
+      return require('../hardware/transports/esp32s3-serial/index.cjs').listPorts();
+    },
     refresh: (...args) => engine().refresh(...args),
     begin: async (body) => {
       await reconcileInstallation();

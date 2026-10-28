@@ -3,7 +3,7 @@
 const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),{spawn}=require('node:child_process');
 (async()=>{
  const root=path.resolve(__dirname,'..'),temp=await fs.mkdtemp(path.join(os.tmpdir(),'iz2s-preview-'));
- await fs.cp(root,temp,{recursive:true,filter:p=>!['.git','data','dist','.dev','node_modules'].includes(path.relative(root,p).split(path.sep)[0])});
+ await fs.cp(root,temp,{recursive:true,filter:p=>{const parts=path.relative(root,p).split(path.sep);return parts[0]==='data'?parts.length===1||parts[1]==='runtime':!['.git','dist','.dev','node_modules'].includes(parts[0]);}});
  const publication=await require(path.join(temp,'sdk/publish-modules.cjs')).publish(temp);
  if(publication.errors.length)throw Error(JSON.stringify(publication.errors));
  const child=spawn(process.execPath,[path.join(temp,'start.cjs'),'--preview',...process.argv.slice(2)],{stdio:'inherit',env:{...process.env,HB_OPEN_PANEL:process.argv.includes('--no-open')?'0':'1'}});

@@ -1,0 +1,19 @@
+{
+  "format": "izlauncher.device",
+  "apiVersion": 1,
+  "version": "1.0.0",
+  "id": "esp32s3-textkeyboard",
+  "name": "ESP32-S3 TextKeyboard",
+  "roles": ["input"],
+  "fields": [
+    {"key": "esp32Port", "label": "ESP32-S3 UART serial port (for example COM15)", "type": "text", "default": ""},
+    {"key": "esp32Baud", "label": "Serial speed", "type": "select", "default": "115200", "options": [{"value": "115200", "label": "115200 baud / 8N1"}]},
+    {"key": "esp32KeyGapMs", "label": "Delay after each key (1-1000 ms)", "type": "text", "default": "40"},
+    {"key": "esp32SwapCase", "label": "Letter case correction / 大小写反转补偿", "description": "Enable only if every letter appears with reversed case on the Switch screen. Check a short sample before entering source. 仅当屏幕上的字母大小写全部颠倒时启用，并先核对短文本。", "type": "select", "default": "no", "options": [{"value": "no", "label": "Off / 关闭（默认）"}, {"value": "yes", "label": "Swap letter case / 反转字母大小写"}]},
+    {"key": "esp32UsbConfirmed", "label": "USB/OTG data port connected to Switch", "type": "select", "default": "no", "options": [{"value": "no", "label": "Not confirmed"}, {"value": "yes", "label": "I have connected USB/OTG to Switch"}]}
+  ],
+  "transport": {"adapter": "esp32s3-serial", "link": "usb-hid"},
+  "hostPlatforms": ["win32-x64", "linux-x64", "linux-arm64"],
+  "capabilities": ["serial", "usb-keyboard"],
+  "validator": "settings.cjs"
+}

@@ -1,5 +1,6 @@
 const path=require('node:path');
 const {invoke,bundle,plan}=require('../common.cjs');
+const hostTools=require('../../../core/host-tools.cjs');
 function create({root,configuration,mode='ssh'}) {
   let files;
   const settings = configuration.settings,
@@ -9,9 +10,10 @@ function create({root,configuration,mode='ssh'}) {
         : settings.deviceFolder;
   async function run(action, body, onEvent, timeout = 30000) {
     if(!files||action==='status'||action==='ensure')files=await bundle(root);
+    const python = hostTools.python();
     return invoke(
-      'python3',
-      [path.join(__dirname, 'python-bridge.py'), mode, action],
+      python.file,
+      [...python.args, path.join(__dirname, 'python-bridge.py'), mode, action],
       {
         input: {
           root,
@@ -21,7 +23,7 @@ function create({root,configuration,mode='ssh'}) {
           armAddress: settings.armAddress || settings.consoleHost,
           body,
         },
-        env: { ...process.env, ...configuration.env },
+        env: { ...process.env, IZ2S_SSH_BINARY: hostTools.ssh(), ...configuration.env },
         onEvent,
         timeout,
       },
